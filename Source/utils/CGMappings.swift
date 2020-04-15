@@ -145,6 +145,7 @@ public extension Node {
 		context.concatenate(transform.toCG())
 
 		renderer.render(in: context, force: false, opacity: self.opacity)
+		renderer.dispose()
 	}
 
     func toNativeImage(size: Size, scale: CGFloat = 1, isOpaque: Bool = false, layout: ContentLayout = .of()) -> MImage {

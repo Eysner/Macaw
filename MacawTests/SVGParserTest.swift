@@ -15,7 +15,7 @@ import XCTest
 #endif
 
 class SVGParserTest: XCTestCase {
-    func testParseFromOtherBundle() {
+    func testParseFromOtherBundle() {Ø
         let bundle = Bundle(for: type(of: TestUtils()))
         let bundleMacawTestsURL = bundle.resourceURL?.appendingPathComponent("MacawTests.bundle")
         let macawTestsBundle = Bundle(url: bundleMacawTestsURL!)!
