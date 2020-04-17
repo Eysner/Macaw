@@ -148,15 +148,13 @@ public extension Node {
 		renderer.dispose()
 	}
 
-    func toNativeImage(size: Size, scale: CGFloat = 1, isOpaque: Bool = false, layout: ContentLayout = .of()) -> MImage {
-        MGraphicsBeginImageContextWithOptions(size.toCG(), isOpaque, scale)
-        let ctx = MGraphicsGetCurrentContext()!
-
-		render(in: ctx, size: size, layout: layout)
-
-        let img = MGraphicsGetImageFromCurrentImageContext()
-        MGraphicsEndImageContext()
-        return img!
+    func toNativeImage(size: Size, layout: ContentLayout = .of(), format: UIGraphicsImageRendererFormat = .default()) -> MImage {
+		let imageRenderer = UIGraphicsImageRenderer(size: size.toCG(), format: format)
+		let img = imageRenderer.image(actions: {
+			context in
+			render(in: context.cgContext, size: size, layout: layout)
+		})
+        return img
     }
 
 }
