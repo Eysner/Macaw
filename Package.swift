@@ -5,12 +5,11 @@ import PackageDescription
 let package = Package(
     name: "Macaw",
     platforms: [
-        .macOS(.v10_12),
-        .iOS(.v9)
+        .iOS(.v10)
     ],
     products: [
         .library(
-            name: "Macaw", 
+            name: "Macaw",
             targets: ["Macaw"]
         )
     ],
