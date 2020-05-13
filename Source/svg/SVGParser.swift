@@ -1659,30 +1659,31 @@ open class SVGParser {
     }
 
     fileprivate func doubleFromString(_ string: String) -> Double? {
-        if let doubleValue = Double(string) {
-            return doubleValue
-        }
         if string == "none" {
             return 0
         }
-        guard let matcher = SVGParserRegexHelper.getUnitsIdenitifierMatcher() else {
-            return .none
-        }
-        let fullRange = NSRange(location: 0, length: string.count)
-        if let match = matcher.firstMatch(in: string, options: .reportCompletion, range: fullRange) {
 
-            let unitString = (string as NSString).substring(with: match.range(at: 1))
-            let numberString = String(string.dropLast(unitString.count))
-            let value = Double(numberString) ?? 0
-            switch unitString {
-            case "px" :
-                return value
-            default:
-                print("SVG parsing error. Unit \(unitString) not supported")
-                return value
-            }
-        }
-        return .none
+		let scanner = Scanner(string: string)
+		var doubleValue: Double = 0
+		scanner.scanDouble(&doubleValue)
+
+		var unitString: NSString? = ""
+		scanner.scanCharacters(from: .unitCharacters, into: &unitString)
+
+		if !scanner.isAtEnd {
+			var junk: NSString? = ""
+			scanner.scanCharacters(from: CharacterSet.unitCharacters.inverted, into: &junk)
+			print("SVG parsing error. Trailing junk after number and unit text: \(junk ?? "").")
+			return nil
+		}
+
+		switch unitString {
+		case nil, "", "px":
+			return doubleValue
+		default:
+			print("SVG parsing error. Unit \(unitString ?? "") not supported")
+			return doubleValue
+		}
     }
 
     fileprivate func getDoubleValueFromPercentage(_ element: SWXMLHash.XMLElement, attribute: String) -> Double? {
@@ -2188,4 +2189,9 @@ fileprivate enum SVGKeys {
     static let fill = "fill"
     static let color = "color"
     static let currentColor = "currentColor"
+}
+
+fileprivate extension CharacterSet {
+	static let unitCharacters = CharacterSet(charactersIn: "a"..."z")
+		.union(CharacterSet(charactersIn: "A"..."Z"))
 }
