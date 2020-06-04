@@ -534,79 +534,82 @@ open class SVGParser {
 
     fileprivate func parseTransformationAttribute(_ attributes: String,
                                                   transform: Transform = Transform()) -> Transform {
-        guard let matcher = SVGParserRegexHelper.getTransformAttributeMatcher() else {
-            return transform
-        }
+		// Parse this regular expression:
+		// ([a-z]+)\(((?:\-?\d+\.?\d*e?\-?\d*\s*,?\s*)+)\)
+		// Group (1) is the transform function;
+		// Group (2) is comma-separated numbers.
 
-        let attributes = attributes.replacingOccurrences(of: "\n", with: "")
-        var finalTransform = transform
-        let fullRange = NSRange(location: 0, length: attributes.count)
+		var transform = transform
+		let scanner = Scanner(string: attributes)
 
-        if let matchedAttribute = matcher.firstMatch(in: attributes, options: .reportCompletion, range: fullRange) {
+		stopScan: while !scanner.isAtEnd {
+			guard let attributeName = scanner.scannedCharacters(from: .transformAttributeCharacters),
+				scanner.scanString("(", into: nil),
+				let valuesSubstring = scanner.scannedUpToString(")"),
+				scanner.scanString(")", into: nil)
+			else {
+				break stopScan
+			}
 
-            let attributeName = (attributes as NSString).substring(with: matchedAttribute.range(at: 1))
-            let values = parseTransformValues((attributes as NSString).substring(with: matchedAttribute.range(at: 2)))
-            if values.isEmpty {
-                return transform
-            }
+			let values = parseTransformValues(valuesSubstring)
+			if values.isEmpty {
+				break stopScan
+			}
+
             switch attributeName {
             case "translate":
-                if let x = Double(values[0]) {
-                    var y: Double = 0
-                    if values.indices.contains(1) {
-                        y = Double(values[1]) ?? 0
-                    }
-                    finalTransform = transform.move(dx: x, dy: y)
-                }
+                let x = values[0]
+				var y: Double = 0
+				if values.indices ~= 1 {
+					y = values[1]
+				}
+				transform = transform.move(dx: x, dy: y)
             case "scale":
-                if let x = Double(values[0]) {
-                    var y: Double = x
-                    if values.indices.contains(1) {
-                        y = Double(values[1]) ?? x
-                    }
-                    finalTransform = transform.scale(sx: x, sy: y)
-                }
+                let x = values[0]
+				var y: Double = x
+				if values.indices ~= 1 {
+					y = values[1]
+				}
+				transform = transform.scale(sx: x, sy: y)
             case "rotate":
-                if let angle = Double(values[0]) {
-                    if values.count == 1 {
-                        finalTransform = transform.rotate(angle: degreesToRadians(angle))
-                    } else if values.count == 3 {
-                        if let x = Double(values[1]), let y = Double(values[2]) {
-                            finalTransform = transform.move(dx: x, dy: y).rotate(angle: degreesToRadians(angle)).move(dx: -x, dy: -y)
-                        }
-                    }
-                }
+                let angle = values[0]
+				if values.count == 1 {
+					transform = transform.rotate(angle: degreesToRadians(angle))
+				} else if values.count == 3 {
+					let x = values[1]
+					let y = values[2]
+					transform = transform
+						.move(dx: x, dy: y)
+						.rotate(angle: degreesToRadians(angle))
+						.move(dx: -x, dy: -y)
+				}
             case "skewX":
-                if let x = Double(values[0]) {
-                    let v = tan((x * Double.pi) / 180.0)
-                    finalTransform = transform.shear(shx: v, shy: 0)
-                }
+                let x = values[0]
+				let v = tan((x * Double.pi) / 180.0)
+				transform = transform.shear(shx: v, shy: 0)
             case "skewY":
-                if let y = Double(values[0]) {
-                    let y = tan((y * Double.pi) / 180.0)
-                    finalTransform = transform.shear(shx: 0, shy: y)
-                }
+                let y = values[0]
+				let v = tan((y * Double.pi) / 180.0)
+				transform = transform.shear(shx: 0, shy: v)
             case "matrix":
                 if values.count != 6 {
                     return transform
                 }
-                if let m11 = Double(values[0]), let m12 = Double(values[1]),
-                    let m21 = Double(values[2]), let m22 = Double(values[3]),
-                    let dx = Double(values[4]), let dy = Double(values[5]) {
+                let m11 = values[0]
+                let m12 = values[1]
+				let m21 = values[2]
+				let m22 = values[3]
+				let dx = values[4]
+				let dy = values[5]
 
-                    let transformMatrix = Transform(m11: m11, m12: m12, m21: m21, m22: m22, dx: dx, dy: dy)
-                    finalTransform = transform.concat(with: transformMatrix)
-                }
+				let transformMatrix = Transform(m11: m11, m12: m12, m21: m21, m22: m22, dx: dx, dy: dy)
+				transform = transform.concat(with: transformMatrix)
             default:
-                break
+                break stopScan
             }
-            let rangeToRemove = NSRange(location: 0,
-                                        length: matchedAttribute.range.location + matchedAttribute.range.length)
-            let newAttributeString = (attributes as NSString).replacingCharacters(in: rangeToRemove, with: "")
-            return parseTransformationAttribute(newAttributeString, transform: finalTransform)
-        } else {
-            return transform
         }
+
+        return transform
     }
 
     /// Parse an RGB
@@ -639,20 +642,20 @@ open class SVGParser {
                          b: Int(blue.rounded(.up)))
     }
 
-    fileprivate func parseTransformValues(_ values: String, collectedValues: [String] = []) -> [String] {
-        guard let matcher = SVGParserRegexHelper.getTransformMatcher() else {
-            return collectedValues
-        }
-        var updatedValues: [String] = collectedValues
-        let fullRange = NSRange(location: 0, length: values.count)
-        if let matchedValue = matcher.firstMatch(in: values, options: .reportCompletion, range: fullRange) {
-            let value = (values as NSString).substring(with: matchedValue.range)
-            updatedValues.append(value)
-            let rangeToRemove = NSRange(location: 0, length: matchedValue.range.location + matchedValue.range.length)
-            let newValues = (values as NSString).replacingCharacters(in: rangeToRemove, with: "")
-            return parseTransformValues(newValues, collectedValues: updatedValues)
-        }
-        return updatedValues
+    fileprivate func parseTransformValues(_ values: String, collectedValues: [Double] = []) -> [Double] {
+		// Parse repeatedly this regular expression: "\-?\d+\.?\d*e?\-?\d*".
+		var collectedValues = collectedValues
+		let scanner = Scanner(string: values)
+		while !scanner.isAtEnd {
+			if let number = scanner.scannedDouble() {
+				collectedValues.append(number)
+			} else {
+				break
+			}
+			_ = scanner.scanCharacters(from: .commaSeparatorCharacters, into: nil)
+		}
+
+		return collectedValues
     }
 
     fileprivate func getStyleAttributes(_ groupAttributes: [String: String],
@@ -2193,6 +2196,43 @@ fileprivate enum SVGKeys {
 }
 
 fileprivate extension CharacterSet {
-	static let unitCharacters = CharacterSet(charactersIn: "a"..."z")
+	private static let alphabetic = CharacterSet(charactersIn: "a"..."z")
 		.union(CharacterSet(charactersIn: "A"..."Z"))
+
+	static let transformAttributeCharacters = alphabetic
+	static let unitCharacters = alphabetic
+
+	static let commaSeparatorCharacters = CharacterSet([","])
+}
+
+fileprivate extension Scanner {
+	func scannedDouble() -> Double? {
+		if #available(iOS 13.0, *) {
+			return scanDouble()
+		} else {
+			var double: Double = 0
+			let success = scanDouble(&double)
+			return success ? double : nil
+		}
+	}
+
+	func scannedCharacters(from set: CharacterSet) -> String? {
+		if #available(iOS 13.0, *) {
+			return scanCharacters(from: set)
+		} else {
+			var result: NSString?
+			let success = scanCharacters(from: set, into: &result)
+			return success ? result as String? : nil
+		}
+	}
+
+	func scannedUpToString(_ substring: String) -> String? {
+		if #available(iOS 13.0, *) {
+			return scanUpToString(substring)
+		} else {
+			var result: NSString?
+			let success = scanUpTo(substring, into: &result)
+			return success ? result as String? : nil
+		}
+	}
 }
