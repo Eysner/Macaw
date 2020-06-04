@@ -1045,28 +1045,33 @@ open class SVGParser {
                                    fontWeight: fontWeight,
                                    pos: pos)
         } else {
-            guard let matcher = SVGParserRegexHelper.getTextElementMatcher() else {
-                return .none
-            }
+			// Parse the string according to this regular expression:
+			// <text.*?>((?s:.*))</text>
+			// Group (1) is the text body.
             let elementString = element.description
-            let fullRange = NSRange(location: 0, length: elementString.count)
-            if let match = matcher.firstMatch(in: elementString, options: .reportCompletion, range: fullRange) {
-                let tspans = (elementString as NSString).substring(with: match.range(at: 1))
-                let rect = Rect(x: getDoubleValue(element, attribute: "x") ?? 0,
-                                y: getDoubleValue(element, attribute: "y") ?? 0)
-                let collectedTspans = collectTspans(tspans,
-                                                    textAnchor: textAnchor,
-                                                    fill: fill,
-                                                    stroke: stroke,
-                                                    opacity: opacity,
-                                                    fontName: fontName,
-                                                    fontSize: fontSize,
-                                                    fontWeight: fontWeight,
-                                                    bounds: rect)
-                return Group(contents: collectedTspans, place: pos, tag: getTag(element))
-            }
+			let scanner = Scanner(string: elementString)
+
+			guard scanner.scanString("<text", into: nil),
+				scanner.scanUpTo(">", into: nil),
+				scanner.scanString(">", into: nil),
+				let tspans = scanner.scannedUpToString("</text>")
+			else {
+				return .none
+			}
+
+			let rect = Rect(x: getDoubleValue(element, attribute: "x") ?? 0,
+							y: getDoubleValue(element, attribute: "y") ?? 0)
+			let collectedTspans = collectTspans(tspans,
+												textAnchor: textAnchor,
+												fill: fill,
+												stroke: stroke,
+												opacity: opacity,
+												fontName: fontName,
+												fontSize: fontSize,
+												fontWeight: fontWeight,
+												bounds: rect)
+			return Group(contents: collectedTspans, place: pos, tag: getTag(element))
         }
-        return .none
     }
 
     fileprivate func anchorToAlign(_ textAnchor: String?) -> Align {

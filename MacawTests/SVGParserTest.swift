@@ -15,7 +15,7 @@ import XCTest
 #endif
 
 class SVGParserTest: XCTestCase {
-    func testParseFromOtherBundle() {Ø
+    func testParseFromOtherBundle() {
         let bundle = Bundle(for: type(of: TestUtils()))
         let bundleMacawTestsURL = bundle.resourceURL?.appendingPathComponent("MacawTests.bundle")
         let macawTestsBundle = Bundle(url: bundleMacawTestsURL!)!
@@ -45,4 +45,24 @@ class SVGParserTest: XCTestCase {
             XCTAssertEqual(error as! SVGParserError, SVGParserError.noSuchFile(path: ""))
         }
     }
+
+    func testParseTspans() throws {
+		// https://developer.mozilla.org/en-US/docs/Web/SVG/Element/tspan
+		let text = """
+			<svg viewBox="0 0 240 40" xmlns="http://www.w3.org/2000/svg">
+			  <style>
+				text  { font: italic 12px serif; }
+				tspan { font: bold 10px sans-serif; fill: red; }
+			  </style>
+
+			  <text x="10" y="30" class="small">
+				You are
+				<tspan>not</tspan>
+				a banana!
+			  </text>
+			</svg>
+		"""
+
+		_ = try SVGParser.parse(text: text)
+	}
 }
