@@ -31,33 +31,35 @@ open class ColorMatrix {
     }
 
     public convenience init(color: Color) {
-        self.init(values: [0, 0, 0, 0, Double(color.r()) / 255.0,
-                           0, 0, 0, 0, Double(color.g()) / 255.0,
-                           0, 0, 0, 0, Double(color.b()) / 255.0,
-                           0, 0, 0, Double(color.a()) / 255.0, 0])
+        let values = [0, 0, 0, 0, Double(color.r()) / 255.0,
+                      0, 0, 0, 0, Double(color.g()) / 255.0,
+                      0, 0, 0, 0, Double(color.b()) / 255.0,
+                      0, 0, 0, Double(color.a()) / 255.0, 0]
+        self.init(values: values)
     }
 
     public convenience init(saturate: Double) {
         let s = max(min(saturate, 1), 0)
-        self.init(values: [0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0, 0,
-                           0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s, 0, 0,
-                           0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s, 0, 0,
-                           0, 0, 0, 1, 0])
+        let values: [Double] = [0.213 + 0.787 * s, 0.715 - 0.715 * s, 0.072 - 0.072 * s, 0, 0,
+                                0.213 - 0.213 * s, 0.715 + 0.285 * s, 0.072 - 0.072 * s, 0, 0,
+                                0.213 - 0.213 * s, 0.715 - 0.715 * s, 0.072 + 0.928 * s, 0, 0,
+                                0, 0, 0, 1, 0]
+        self.init(values: values)
     }
 
     public convenience init(hueRotate: Double) {
         let c = cos(hueRotate)
         let s = sin(hueRotate)
-        let m1 = [0.213, 0.715, 0.072,
-                  0.213, 0.715, 0.072,
-                  0.213, 0.715, 0.072]
-        let m2 = [0.787, -0.715, -0.072,
-                  -0.213, 0.285, -0.072,
-                  -0.213, -0.715, 0.928]
-        let m3 = [-0.213, -0.715, 0.928,
-                  0.143, 0.140, -0.283,
-                  -0.787, 0.715, 0.072]
-        let a = { i in
+        let m1: [Double] = [0.213, 0.715, 0.072,
+                            0.213, 0.715, 0.072,
+                            0.213, 0.715, 0.072]
+        let m2: [Double] = [0.787, -0.715, -0.072,
+                            -0.213, 0.285, -0.072,
+                            -0.213, -0.715, 0.928]
+        let m3: [Double] = [-0.213, -0.715, 0.928,
+                            0.143, 0.140, -0.283,
+                            -0.787, 0.715, 0.072]
+        func a(_ i: Int) -> Double {
             m1[i] + c * m2[i] + s * m3[i]
         }
         self.init(values: [a(0), a(1), a(2), 0, 0,
