@@ -1320,6 +1320,7 @@ open class SVGParser {
                 if let node = try parseNode(referenceNode, groupStyle: groupStyle) {
                     node.place = place.move(dx: getDoubleValue(element, attribute: "x") ?? 0,
                                             dy: getDoubleValue(element, attribute: "y") ?? 0).concat(with: node.place)
+					node.tag = getTag(element)
                     return node
                 }
             }
