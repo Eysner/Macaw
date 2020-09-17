@@ -255,7 +255,7 @@ open class SVGParser {
                              yAlign: yAligningMode)
     }
 
-    fileprivate func parseNode(_ node: XMLIndexer, groupStyle: [String: String] = [:]) throws -> Node? {
+    fileprivate func parseNode(_ node: XMLIndexer, groupStyle: [String: String] = [:], tag: [String]? = nil) throws -> Node? {
         var result: Node?
         if let element = node.element {
             let style = getStyleAttributes(groupStyle, element: element)
@@ -264,12 +264,12 @@ open class SVGParser {
             }
             switch element.name {
             case "g":
-                result = try parseGroup(node, style: style)
+                result = try parseGroup(node, style: style, tag: tag)
             case "style", "defs":
                 // do nothing - it was parsed on first iteration
                 return .none
             default:
-                result = try parseElement(node, style: style)
+                result = try parseElement(node, style: style, tag: tag)
             }
 
             if let result = result,
@@ -288,7 +288,7 @@ open class SVGParser {
         }
     }
 
-    fileprivate func parseElement(_ node: XMLIndexer, style: [String: String]) throws -> Node? {
+    fileprivate func parseElement(_ node: XMLIndexer, style: [String: String], tag: [String]? = nil) throws -> Node? {
         if style["visibility"] == "hidden" {
             return .none
         }
@@ -297,6 +297,7 @@ open class SVGParser {
         }
         let hasMask = style["mask"] != .none
         let position = getPosition(element)
+        let tag = tag ?? getTag(element)
         switch element.name {
         case "path":
             if var path = parsePath(node) {
@@ -312,7 +313,7 @@ open class SVGParser {
                                  opacity: getOpacity(style),
                                  clip: getClipPath(style, locus: path),
                                  mask: mask,
-                                 tag: getTag(element))
+                                 tag: tag)
                 }
             }
         case "line":
@@ -326,7 +327,7 @@ open class SVGParser {
                                  opacity: getOpacity(style),
                                  clip: getClipPath(style, locus: line),
                                  mask: mask,
-                                 tag: getTag(element))
+                                 tag: tag)
                 }
             }
         case "rect":
@@ -340,7 +341,7 @@ open class SVGParser {
                                  opacity: getOpacity(style),
                                  clip: getClipPath(style, locus: rect),
                                  mask: mask,
-                                 tag: getTag(element))
+                                 tag: tag)
                 }
             }
         case "circle":
@@ -354,7 +355,7 @@ open class SVGParser {
                                  opacity: getOpacity(style),
                                  clip: getClipPath(style, locus: circle),
                                  mask: mask,
-                                 tag: getTag(element))
+                                 tag: tag)
                 }
             }
         case "ellipse":
@@ -368,7 +369,7 @@ open class SVGParser {
                                  opacity: getOpacity(style),
                                  clip: getClipPath(style, locus: ellipse),
                                  mask: mask,
-                                 tag: getTag(element))
+                                 tag: tag)
                 }
             }
         case "polygon":
@@ -382,7 +383,7 @@ open class SVGParser {
                                  opacity: getOpacity(style),
                                  clip: getClipPath(style, locus: polygon),
                                  mask: mask,
-                                 tag: getTag(element))
+                                 tag: tag)
                 }
             }
         case "polyline":
@@ -396,7 +397,7 @@ open class SVGParser {
                                  opacity: getOpacity(style),
                                  clip: getClipPath(style, locus: polyline),
                                  mask: mask,
-                                 tag: getTag(element))
+                                 tag: tag)
                 }
             }
         case "image":
@@ -490,7 +491,7 @@ open class SVGParser {
                                 contentUserSpace: contentUserSpace)
     }
 
-    fileprivate func parseGroup(_ group: XMLIndexer, style: [String: String]) throws -> Group? {
+    fileprivate func parseGroup(_ group: XMLIndexer, style: [String: String], tag: [String]?) throws -> Group? {
         guard let element = group.element else {
             return .none
         }
@@ -500,7 +501,7 @@ open class SVGParser {
                 groupNodes.append(node)
             }
         }
-        return Group(contents: groupNodes, place: getPosition(element), tag: getTag(element))
+        return Group(contents: groupNodes, place: getPosition(element), tag: tag ?? getTag(element))
     }
 
     fileprivate func getPosition(_ element: SWXMLHash.XMLElement) -> Transform {
@@ -1317,7 +1318,7 @@ open class SVGParser {
                 defer {
                     usedReferenced.removeValue(forKey: id)
                 }
-                if let node = try parseNode(referenceNode, groupStyle: groupStyle) {
+                if let node = try parseNode(referenceNode, groupStyle: groupStyle, tag: getTag(element)) {
                     node.place = place.move(dx: getDoubleValue(element, attribute: "x") ?? 0,
                                             dy: getDoubleValue(element, attribute: "y") ?? 0).concat(with: node.place)
                     return node
