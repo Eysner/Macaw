@@ -255,7 +255,7 @@ open class SVGParser {
                              yAlign: yAligningMode)
     }
 
-	fileprivate func parseNode(_ node: XMLIndexer, groupStyle: [String: String] = [:], tag: [String]? = nil) throws -> Node? {
+    fileprivate func parseNode(_ node: XMLIndexer, groupStyle: [String: String] = [:], tag: [String]? = nil) throws -> Node? {
         var result: Node?
         if let element = node.element {
             let style = getStyleAttributes(groupStyle, element: element)
@@ -297,10 +297,7 @@ open class SVGParser {
         }
         let hasMask = style["mask"] != .none
         let position = getPosition(element)
-		let tag: [String] = {
-			guard let tag = tag else { return getTag(element) }
-			return tag
-		}()
+        let tag = tag ?? getTag(element)
         switch element.name {
         case "path":
             if var path = parsePath(node) {
@@ -1307,7 +1304,7 @@ open class SVGParser {
 
     fileprivate func parseUse(_ use: XMLIndexer,
                               groupStyle: [String: String] = [:],
-							  place: Transform = .identity) throws -> Node? {
+                              place: Transform = .identity) throws -> Node? {
         guard let element = use.element, let link = element.allAttributes["xlink:href"]?.text else {
             return .none
         }
@@ -1321,7 +1318,7 @@ open class SVGParser {
                 defer {
                     usedReferenced.removeValue(forKey: id)
                 }
-				if let node = try parseNode(referenceNode, groupStyle: groupStyle, tag: getTag(element)) {
+                if let node = try parseNode(referenceNode, groupStyle: groupStyle, tag: getTag(element)) {
                     node.place = place.move(dx: getDoubleValue(element, attribute: "x") ?? 0,
                                             dy: getDoubleValue(element, attribute: "y") ?? 0).concat(with: node.place)
                     return node
