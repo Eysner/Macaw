@@ -497,11 +497,11 @@ open class SVGParser {
         }
         var groupNodes: [Node] = []
         try group.children.forEach { child in
-            if let node = try parseNode(child, groupStyle: style, tag: tag) {
+            if let node = try parseNode(child, groupStyle: style) {
                 groupNodes.append(node)
             }
         }
-        return Group(contents: groupNodes, place: getPosition(element), tag: getTag(element))
+        return Group(contents: groupNodes, place: getPosition(element), tag: tag ?? getTag(element))
     }
 
     fileprivate func getPosition(_ element: SWXMLHash.XMLElement) -> Transform {
