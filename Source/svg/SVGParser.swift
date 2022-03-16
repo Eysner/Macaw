@@ -1631,7 +1631,9 @@ open class SVGParser {
 
     fileprivate func parsePath(_ path: XMLIndexer) -> Path? {
         if let d = path.element?.allAttributes["d"]?.text {
-            return Path(segments: PathDataReader(input: d).read())
+			let pathDataReader: PathDataReader = PathDataReader(input: d)
+			let segments: [PathSegment] = pathDataReader.read()
+            return Path(segments: segments)
         }
         return .none
     }
@@ -2011,7 +2013,7 @@ private class PathDataReader {
     }
 
     fileprivate func readNum() -> Double? {
-        guard let ch = current else {
+        guard let ch: UnicodeScalar = current else {
             return .none
         }
 
@@ -2019,13 +2021,13 @@ private class PathDataReader {
             return .none
         }
 
-        var chars = [ch]
+		var chars: [UnicodeScalar] = [ch]
         var hasDot = ch == "."
-        while let ch = readDigit(&hasDot) {
+		while let ch: UnicodeScalar = readDigit(&hasDot) {
             chars.append(ch)
         }
 
-        var buf = ""
+		var buf: String = ""
         buf.unicodeScalars.append(contentsOf: chars)
         guard let value = Double(buf) else {
             return .none
