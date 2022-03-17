@@ -25,5 +25,5 @@ Pod::Spec.new do |s|
      'Source/**/*.swift'
   ]
 
-  s.dependency 'SWXMLHash'
+  s.dependency 'SWXMLHash', '5.0.1'
 end
